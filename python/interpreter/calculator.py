@@ -102,13 +102,14 @@ class Interpreter(object):
                 self.eat(MINUS)
                 result = result - self.term()
         
-        op = self.current_token
-        if op.type == TIMES:
-            self.eat(TIMES)
-            result = result * self.term()
-        elif op.type == DIVIDE:
-            self.eat(DIVIDE)
-            result = result / self.term()
+        while self.current_token.type in (TIMES, DIVIDE):
+            op = self.current_token
+            if op.type == TIMES:
+                self.eat(TIMES)
+                result = result * self.term()
+            elif op.type == DIVIDE:
+                self.eat(DIVIDE)
+                result = result / self.term()
         
         return result
 
