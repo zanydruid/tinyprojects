@@ -87,28 +87,30 @@ class Interpreter(object):
         self.current_token = self.get_next_token()
         left = self.current_token
         self.eat(INTEGER)
+        result = left.value
         
-        op = self.current_token
-        if op.type == PLUS:
-            self.eat(PLUS)
-        elif op.type == MINUS:
-            self.eat(MINUS)
-        elif op.type == TIMES:
-            self.eat(TIMES)
-        else:
-            self.eat(DIVIDE)
+        while self.current_token.type is not EOF:
+            op = self.current_token
+            if op.type == PLUS:
+                self.eat(PLUS)
+            elif op.type == MINUS:
+                self.eat(MINUS)
+            elif op.type == TIMES:
+                self.eat(TIMES)
+            else:
+                self.eat(DIVIDE)
         
-        right = self.current_token
-        self.eat(INTEGER)
+            right = self.current_token
+            self.eat(INTEGER)
         
-        if op.type == PLUS:
-            result = left.value + right.value
-        elif op.type == MINUS:
-            result = left.value - right.value
-        elif op.type == TIMES:
-            result = left.value * right.value
-        else:
-            result = left.value / right.value
+            if op.type == PLUS:
+                result += right.value
+            elif op.type == MINUS:
+                result -= right.value
+            elif op.type == TIMES:
+                result = left.value * right.value
+            else:
+                result = left.value / right.value
         return result
 
 
