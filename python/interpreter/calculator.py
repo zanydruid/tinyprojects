@@ -83,34 +83,33 @@ class Interpreter(object):
         else:
             self.error()
 
+    def term(self):
+        token = self.current_token
+        self.eat(INTEGER)
+        return token.value
+
     def expr(self):
         self.current_token = self.get_next_token()
-        left = self.current_token
-        self.eat(INTEGER)
-        result = left.value
         
-        while self.current_token.type is not EOF:
+        result = self.term()
+        
+        while self.current_token.type in (PLUS, MINUS):
             op = self.current_token
             if op.type == PLUS:
                 self.eat(PLUS)
+                result = result + self.term()
             elif op.type == MINUS:
                 self.eat(MINUS)
-            elif op.type == TIMES:
-                self.eat(TIMES)
-            else:
-                self.eat(DIVIDE)
+                result = result - self.term()
         
-            right = self.current_token
-            self.eat(INTEGER)
+        op = self.current_token
+        if op.type == TIMES:
+            self.eat(TIMES)
+            result = result * self.term()
+        elif op.type == DIVIDE:
+            self.eat(DIVIDE)
+            result = result / self.term()
         
-            if op.type == PLUS:
-                result += right.value
-            elif op.type == MINUS:
-                result -= right.value
-            elif op.type == TIMES:
-                result = left.value * right.value
-            else:
-                result = left.value / right.value
         return result
 
 
