@@ -1,4 +1,4 @@
-INTEGER, PLUS, MINUS, TIMES, DIVIDE, EOF = 'INTEGER', 'PLUS', 'MINUS', 'TIMES','DIVIDE','EOF'
+INTEGER, PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN, EOF = 'INTEGER', 'PLUS', 'MINUS', 'TIMES','DIVIDE', 'LPAREN', 'RPAREN', 'EOF'
 
 class Token(object):
     def __init__(self, type, value):
@@ -73,6 +73,14 @@ class Lexer(object):
                 self.advance()
                 return Token(DIVIDE, '/')
             
+            if self.current_char == '(':
+                self.advance()
+                return Token(LPAREN, '(')
+            
+            if self.current_char == ')':
+                self.advance()
+                return Token(RPAREN, ')')
+            
             self.error()
         return Token(EOF, None)
 
@@ -103,8 +111,16 @@ class Interpreter(object):
     
     def factor(self):
         token = self.current_token
-        self.eat(INTEGER)
-        return token.value
+        result = 0
+        if token.type == INTEGER:
+            self.eat(INTEGER)
+            result = token.value
+        
+        elif token.type == LPAREN:
+            self.eat(LPAREN)
+            result = self.expr()
+            self.eat(RPAREN)
+        return result
     
     def expr(self):
         self.current_token = self.lexer.get_next_token()
