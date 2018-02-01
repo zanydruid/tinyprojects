@@ -87,12 +87,25 @@ class Interpreter(object):
             self.current_token = self.lexer.get_next_token()
         else:
             self.lexer.error()
-
+    
     def term(self):
+        result = self.factor()
+        
+        while self.current_token.type in (TIMES, DIVIDE):
+            op = self.current_token
+            if op.type == TIMES:
+                self.eat(TIMES)
+                result = result * self.factor()
+            elif op.type == DIVIDE:
+                self.eat(DIVIDE)
+                result = result / self.factor()
+        return result
+    
+    def factor(self):
         token = self.current_token
         self.eat(INTEGER)
         return token.value
-
+    
     def expr(self):
         self.current_token = self.lexer.get_next_token()
         
@@ -106,16 +119,6 @@ class Interpreter(object):
             elif op.type == MINUS:
                 self.eat(MINUS)
                 result = result - self.term()
-        
-        while self.current_token.type in (TIMES, DIVIDE):
-            op = self.current_token
-            if op.type == TIMES:
-                self.eat(TIMES)
-                result = result * self.term()
-            elif op.type == DIVIDE:
-                self.eat(DIVIDE)
-                result = result / self.term()
-        
         return result
 
 
