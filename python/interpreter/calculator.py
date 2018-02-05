@@ -1,3 +1,9 @@
+###############################################################################
+#                                                                             #
+#  LEXER                                                                      #
+#                                                                             #
+###############################################################################
+
 INTEGER, PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN, EOF = 'INTEGER', 'PLUS', 'MINUS', 'TIMES','DIVIDE', 'LPAREN', 'RPAREN', 'EOF'
 
 class Token(object):
@@ -85,69 +91,135 @@ class Lexer(object):
         return Token(EOF, None)
 
 
-class Interpreter(object):
+###############################################################################
+#                                                                             #
+#  PARSER                                                                     #
+#                                                                             #
+###############################################################################
+
+class AST(object):
+    pass
+
+class BinOp(AST):
+    def __init__(self, left, op, right):
+        self.left = left
+        self.token = self.op = op
+        self.right = right
+
+class Num(AST):
+    def __init__(self, token):
+        self.token = token
+        self.value = token.value
+
+class Parser(object):
     def __init__(self, lexer):
         self.lexer = lexer
         self.current_token = self.lexer.get_next_token()
-    
+
+    def error(self):
+        raise Exception('Invalid syntax')
+
     def eat(self, token_type):
         if self.current_token.type == token_type:
             self.current_token = self.lexer.get_next_token()
         else:
-            self.lexer.error()
-    
-    def term(self):
-        result = self.factor()
-        
-        while self.current_token.type in (TIMES, DIVIDE):
-            op = self.current_token
-            if op.type == TIMES:
-                self.eat(TIMES)
-                result = result * self.factor()
-            elif op.type == DIVIDE:
-                self.eat(DIVIDE)
-                result = result / self.factor()
-        return result
-    
+            self.error()
+
     def factor(self):
         token = self.current_token
-        
         if token.type == INTEGER:
             self.eat(INTEGER)
-            return token.value
-        
+            return Num(token)
         elif token.type == LPAREN:
             self.eat(LPAREN)
-            result = self.expr()
+            node = self.expr()
             self.eat(RPAREN)
-            return result
-    
-    def expr(self):
+            return node
+
+    def term(self):
+        node = self.factor()
         
-        result = self.term()
+        while self.current_token.type in (TIMES, DIVIDE):
+            token = self.current_token
+            if token.type == TIMES:
+                self.eat(TIMES)
+            elif token.type == DIVIDE:
+                self.eat(DIVIDE)
+            
+            node = BinOp(node, token, self.factor())
+        
+        return node
+
+    def expr(self):
+        node = self.term()
         
         while self.current_token.type in (PLUS, MINUS):
-            op = self.current_token
-            if op.type == PLUS:
+            token = self.current_token
+            if token.type == PLUS:
                 self.eat(PLUS)
-                result = result + self.term()
-            elif op.type == MINUS:
+            elif token.type == MINUS:
                 self.eat(MINUS)
-                result = result - self.term()
-        return result
+            
+            node = BinOp(node, token, self.term())
+        return node
+
+    def parse(self):
+        return self.expr()
+
+
+###############################################################################
+#                                                                             #
+#  INTERPRETER                                                                #
+#                                                                             #
+###############################################################################
+
+class NodeVisitor(object):
+    def visit(self, node):
+        method_name = 'visit_' + type(node).__name__
+        visitor = getattr(self, method_name, self.generic_visit)
+        return visitor(node)
+
+    def generic_visit(self, node):
+        raise Exception('No visit_{} method'.format(type(node).__name__))
+
+class Interpreter(NodeVisitor):
+    def __init__(self, parser):
+        self.parser = parser
+        
+    def visit_BinOp(self, node):
+        if node.op.type == PLUS:
+            return self.visit(node.left) + self.visit(node.right)
+        elif node.op.type == MINUS:
+            return self.visit(node.left) - self.visit(node.right)
+        elif node.op.type == TIMES:
+            return self.visit(node.left) * self.visit(node.right)
+        elif node.op.type == DIVIDE:
+            return self.visit(node.left) / self.visit(node.right)
+
+    def visit_Num(self, node):
+        return node.value
+
+    def interpret(self):
+        tree = self.parser.parse()
+        return self.visit(tree)
 
 
 def main():
     while True:
         try:
-            text = input('calculator>')
+            try:
+                text = raw_input('spi>')
+            except NameError:
+                text = input('spi>')
         except EOFError:
             break
         if not text:
             continue
+        
         lexer = Lexer(text)
-        inter = Interpreter(lexer)
-        result = inter.expr()
+        parser = Parser(lexer)
+        interpreter = Interpreter(parser)
+        result = interpreter.interpret()
         print(result)
 
 if __name__ == '__main__':
