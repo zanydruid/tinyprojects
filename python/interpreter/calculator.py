@@ -88,7 +88,7 @@ class Lexer(object):
 class Interpreter(object):
     def __init__(self, lexer):
         self.lexer = lexer
-        self.current_token = None
+        self.current_token = self.lexer.get_next_token()
     
     def eat(self, token_type):
         if self.current_token.type == token_type:
@@ -111,19 +111,18 @@ class Interpreter(object):
     
     def factor(self):
         token = self.current_token
-        result = 0
+        
         if token.type == INTEGER:
             self.eat(INTEGER)
-            result = token.value
+            return token.value
         
         elif token.type == LPAREN:
             self.eat(LPAREN)
             result = self.expr()
             self.eat(RPAREN)
-        return result
+            return result
     
     def expr(self):
-        self.current_token = self.lexer.get_next_token()
         
         result = self.term()
         
